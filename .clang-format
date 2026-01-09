@@ -1,0 +1,26 @@
+# .clang-format
+
+# Use the LLVM coding style as the base
+BasedOnStyle: LLVM
+
+# Indentation settings
+IndentWidth: 4           # Use 4 spaces for indentation (you can change to 2 if preferred)
+TabWidth: 4              # Number of spaces to represent a tab
+UseTab: Never            # Never use tabs, only spaces for indentation
+
+SortIncludes: false
+
+# Brace formatting settings
+BreakBeforeBraces: Attach # K&R / attached brace style
+AllowShortIfStatementsOnASingleLine: false # Do not allow single-line if statements
+
+# Line settings
+ColumnLimit: 80           # Limit line length to 80 characters (standard practice)
+MaxEmptyLinesToKeep: 1    # Keep at most one empty line between functions or class definitions
+
+# Miscellaneous formatting settings
+AlignAfterOpenBracket: Align # Align parameters or arguments after open bracket
+AlignConsecutiveAssignments: false # Align consecutive assignments
+
+# Comment formatting
+CommentPragmas: "^IWYU"    # Ignore comments like "IWYU" for warnings
