@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define MIN_PAYLOAD 16
 #define ALIGNMENT 16
 #define ALIGN(x) (((x) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 #define HEADER_SIZE ALIGN(sizeof(block))
@@ -15,10 +16,10 @@ typedef struct block {
 static block *block_list = NULL;
 
 void *myalloc(size_t size);
-void *find_free_block(size_t size);
+block *find_free_block(size_t size);
 void release_block(void *ptr);
 void *current_memory_break();
-void *split_block(void *ptr);
+void split_block(block *ptr, size_t size);
 
 int main() {
 
@@ -44,6 +45,9 @@ void *myalloc(size_t size) {
 
     block *new_block = find_free_block(payload_size);
     if (new_block) {
+        if (new_block->size >= size + HEADER_SIZE + MIN_PAYLOAD) {
+            split_block(new_block, size);
+        }
         new_block->free = 0;
         printf("found free momory\n");
         return (void *)((char *)new_block + HEADER_SIZE);
@@ -65,7 +69,7 @@ void *myalloc(size_t size) {
     return (void *)((char *)new_block + HEADER_SIZE);
 }
 
-void *find_free_block(size_t size) {
+block *find_free_block(size_t size) {
 
     block *curr = block_list;
     while (curr) {
