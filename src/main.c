@@ -12,12 +12,32 @@ typedef struct block {
     struct block *next;
 } block;
 
-block *block_list = NULL;
+static block *block_list = NULL;
 
 void *myalloc(size_t size);
 void *find_free_block(size_t size);
 void release_block(void *ptr);
 void *current_memory_break();
+void *split_block(void *ptr);
+
+int main() {
+
+    printf("Current memory break: %p\n", current_memory_break());
+    printf("Size of block: %ld\n", sizeof(block));
+
+    double *user_data = (double *)myalloc(sizeof(double));
+    *user_data = 39;
+
+    printf("Value: %f\n", *user_data);
+    printf("%ld\n", sizeof(*user_data));
+
+    block *header = (block *)(((char *)user_data) - HEADER_SIZE);
+    printf("%ld\n", header->size);
+
+    printf("Current memory break: %p\n", current_memory_break());
+    release_block(user_data);
+    return 0;
+}
 
 void *myalloc(size_t size) {
     size_t payload_size = ALIGN(size);
@@ -69,23 +89,4 @@ void *current_memory_break() {
         return NULL;
     }
     return p;
-}
-
-int main() {
-
-    printf("Current memory break: %p\n", current_memory_break());
-    printf("Size of block: %ld\n", sizeof(block));
-
-    double *user_data = (double *)myalloc(sizeof(double));
-    *user_data = 39;
-
-    printf("Value: %f\n", *user_data);
-    printf("%ld\n", sizeof(*user_data));
-
-    block *header = (block *)(((char *)user_data) - HEADER_SIZE);
-    printf("%ld\n", header->size);
-
-    printf("Current memory break: %p\n", current_memory_break());
-    release_block(user_data);
-    return 0;
 }
