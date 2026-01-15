@@ -12,7 +12,7 @@ typedef struct block {
     size_t payload_size;
     int free;
     struct block *next;
-} __attribute__((aligned(16))) block;
+} block;
 
 static block *block_list = NULL;
 
