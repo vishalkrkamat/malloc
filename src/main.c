@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define MIN_PAYLOAD 16
 #define ALIGNMENT 16
@@ -11,7 +12,7 @@ typedef struct block {
     size_t payload_size;
     int free;
     struct block *next;
-} block;
+} __attribute__((aligned(16))) block;
 
 static block *block_list = NULL;
 
@@ -58,7 +59,7 @@ void *myalloc(size_t size) {
 
     void *rawmem = sbrk(HEADER_SIZE + payload_size);
     if (rawmem == (void *)-1) {
-        perror("Allocation failed");
+        errno = ENOMEM;
         return NULL;
     }
 
@@ -86,6 +87,9 @@ block *find_free_block(size_t size) {
 
 void split_block(block *ptr, size_t requested_payload) {
 
+    if (!ptr || !ptr->free)
+        return;
+
     block *new_block = (block *)((char *)ptr + HEADER_SIZE + requested_payload);
     new_block->payload_size =
         ptr->payload_size - HEADER_SIZE - requested_payload;
@@ -97,14 +101,21 @@ void split_block(block *ptr, size_t requested_payload) {
 }
 
 void release_block(void *ptr) {
+
+    if (!ptr)
+        return;
+
     block *mem = (block *)(((char *)ptr) - HEADER_SIZE);
+
+    if (mem->free)
+        abort();
+
     mem->free = 1;
 }
 
 void *current_memory_break() {
     void *p = sbrk(0);
     if (p == (void *)-1) {
-        perror("error in sbrk while getting current program break");
         return NULL;
     }
     return p;
