@@ -28,25 +28,6 @@ void split_block(block *ptr, size_t size);
 void remove_from_free_list(block *b);
 void insert_into_free_list(block *b);
 
-int main() {
-
-    printf("Current memory break: %p\n", current_memory_break());
-    printf("Size of block: %ld\n", sizeof(block));
-
-    double *user_data = (double *)myalloc(sizeof(double));
-    *user_data = 39;
-
-    printf("Value: %f\n", *user_data);
-    printf("%ld\n", sizeof(*user_data));
-
-    block *header = (block *)(((char *)user_data) - HEADER_SIZE);
-    printf("%ld\n", header->size);
-
-    printf("Current memory break: %p\n", current_memory_break());
-    release_block(user_data);
-    return 0;
-}
-
 void *myalloc(size_t size) {
     size_t payload_size = ALIGN(size);
     size_t total_size = payload_size + BLOCK_OVERHEAD;
