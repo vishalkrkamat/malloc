@@ -2,25 +2,39 @@ SRC_DIR := src
 BUILD_DIR := build
 CC := gcc
 
-# ---- modes ----
+# ---- flags ----
 CFLAGS_BASE := -Wall -Wextra -Wpedantic
 CFLAGS_DEBUG := -O0 -g -fsanitize=address -fno-omit-frame-pointer
+CFLAGS_RELEASE := -O3 -DNDEBUG
 
-# default = debug (learning-safe)
+# ---- default: debug ----
 CFLAGS := $(CFLAGS_BASE) $(CFLAGS_DEBUG)
+BUILD_SUBDIR := debug
 
-# Default target: make <filename-without-.c>
-%: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	@echo "Building $<"
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$@ $<
-	@echo "Running $@"
-	@./$(BUILD_DIR)/$@
+# ---- pattern: debug ----
+%: $(SRC_DIR)/%.c | $(BUILD_DIR)/$(BUILD_SUBDIR)
+	@echo "[DEBUG] Building $@"
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(BUILD_SUBDIR)/$@ $<
+	@echo "[DEBUG] Running $@"
+	@./$(BUILD_DIR)/$(BUILD_SUBDIR)/$@
 
-# Create build directory if missing
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+# ---- pattern: release ----
+%-release: CFLAGS := $(CFLAGS_BASE) $(CFLAGS_RELEASE)
+%-release: BUILD_SUBDIR := release
+%-release: $(SRC_DIR)/%.c | $(BUILD_DIR)/release
+	@echo "[RELEASE] Building $*"
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/release/$* $<
+	@echo "[RELEASE] Running $*"
+	@./$(BUILD_DIR)/release/$*
 
-# Clean build artifacts
+# ---- directories ----
+$(BUILD_DIR)/debug:
+	mkdir -p $@
+
+$(BUILD_DIR)/release:
+	mkdir -p $@
+
+# ---- clean ----
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
