@@ -1,3 +1,4 @@
+#include "allocator.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -21,9 +22,7 @@ typedef block footer;
 
 static block *free_list = NULL;
 
-void *myalloc(size_t size);
 block *find_free_block(size_t size);
-void release_block(void *ptr);
 void *current_memory_break();
 void split_block(block *ptr, size_t size);
 void remove_from_free_list(block *b);
