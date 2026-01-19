@@ -18,7 +18,10 @@ typedef struct block {
     struct block *next;
 } block;
 
-typedef block footer;
+typedef struct footer {
+    size_t size;
+    int free;
+} footer;
 
 static block *free_list = NULL;
 
