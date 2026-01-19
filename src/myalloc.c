@@ -140,7 +140,7 @@ void release_block(void *ptr) {
 
     mem->free = 1;
 
-    footer *ftr = (footer *)((char *)ptr + mem->size - FOOTER_SIZE);
+    footer *ftr = (footer *)((char *)mem + mem->size - FOOTER_SIZE);
 
     ftr->free = 1;
 
