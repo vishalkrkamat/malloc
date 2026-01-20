@@ -24,12 +24,14 @@ typedef struct footer {
 } footer;
 
 static block *free_list = NULL;
+static void *heap_start = NULL;
 
 block *find_free_block(size_t size);
 void *current_memory_break();
 void split_block(block *ptr, size_t size);
 void remove_from_free_list(block *b);
 void insert_into_free_list(block *b);
+void *merge_block(block *);
 
 void *myalloc(size_t size) {
     size_t payload_size = ALIGN(size);
@@ -64,6 +66,11 @@ void *myalloc(size_t size) {
         (footer *)((char *)new_allocated_block + total_size - FOOTER_SIZE);
     ftr->size = total_size;
     ftr->free = 0;
+
+    if (heap_start == NULL) {
+        heap_start = rawmem;
+    }
+
     return (void *)((char *)new_allocated_block + HEADER_SIZE);
 }
 
@@ -131,6 +138,95 @@ void insert_into_free_list(block *b) {
     free_list = b;
 }
 
+void *merge_block(block *ptr) {
+
+    void *heap_end = sbrk(0);
+
+    int has_prev = ((void *)ptr != heap_start);
+    int has_next = ((void *)((char *)ptr + ptr->size) < heap_end);
+    block *prev_block = NULL;
+    footer *prev_block_footer = NULL;
+    block *next_block = NULL;
+
+    if (has_prev) {
+
+        prev_block_footer = (footer *)((char *)ptr - FOOTER_SIZE);
+        prev_block = (block *)((char *)ptr - prev_block_footer->size);
+    }
+
+    if (has_next) {
+
+        next_block = (block *)((char *)ptr + ptr->size);
+    }
+
+    if (has_next && has_prev && prev_block_footer->free && next_block->free) {
+
+        /* Merging three blocks when both the previous and next memory block is
+         * free */
+
+        size_t new_total_size =
+            prev_block_footer->size + ptr->size + next_block->size;
+
+        block *new_merged_block =
+            (block *)((char *)ptr - prev_block_footer->size);
+
+        new_merged_block->size = new_total_size;
+
+        footer *new_merged_block_footer =
+            (footer *)((char *)new_merged_block + new_total_size - FOOTER_SIZE);
+        new_merged_block_footer->size = new_total_size;
+        new_merged_block->free = 1;
+        new_merged_block_footer->free = 1;
+        remove_from_free_list(prev_block);
+        remove_from_free_list(next_block);
+        return new_merged_block;
+
+    } else if (has_prev && prev_block_footer->free) {
+
+        /* Merging two blocks when the previous and current memory block is
+         * free */
+
+        size_t new_total_size = prev_block_footer->size + ptr->size;
+
+        block *new_merged_block =
+            (block *)((char *)ptr - prev_block_footer->size);
+
+        new_merged_block->size = new_total_size;
+
+        footer *new_merged_block_footer =
+            (footer *)((char *)new_merged_block + new_total_size - FOOTER_SIZE);
+
+        new_merged_block_footer->size = new_total_size;
+        new_merged_block->free = 1;
+        new_merged_block_footer->free = 1;
+
+        remove_from_free_list(prev_block);
+        return new_merged_block;
+
+    } else if (has_next && next_block->free) {
+
+        /* Merging two blocks when the current and next memory block is
+         * free */
+
+        size_t new_total_size = ptr->size + next_block->size;
+
+        ptr->size = new_total_size;
+
+        footer *new_merged_block_footer =
+            (footer *)((char *)ptr + new_total_size - FOOTER_SIZE);
+
+        new_merged_block_footer->size = new_total_size;
+        ptr->free = 1;
+        new_merged_block_footer->free = 1;
+
+        remove_from_free_list(next_block);
+        return ptr;
+
+    } else {
+        return ptr;
+    }
+}
+
 void release_block(void *ptr) {
 
     if (!ptr)
@@ -147,6 +243,7 @@ void release_block(void *ptr) {
 
     ftr->free = 1;
 
+    mem = merge_block(mem);
     insert_into_free_list(mem);
 }
 
