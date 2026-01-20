@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdint.h>
 
 #define MIN_PAYLOAD 16
 #define ALIGNMENT 16
@@ -34,6 +35,10 @@ void insert_into_free_list(block *b);
 void *merge_block(block *);
 
 void *myalloc(size_t size) {
+    if (size == 0) {
+        return NULL;
+    }
+
     size_t payload_size = ALIGN(size);
     size_t total_size = payload_size + BLOCK_OVERHEAD;
 
@@ -61,6 +66,7 @@ void *myalloc(size_t size) {
     block *new_allocated_block = (block *)rawmem;
     new_allocated_block->size = total_size;
     new_allocated_block->free = 0;
+    new_allocated_block->next = NULL;
 
     footer *ftr =
         (footer *)((char *)new_allocated_block + total_size - FOOTER_SIZE);
@@ -123,6 +129,7 @@ void split_block(block *ptr, size_t requested_payload) {
         (footer *)((char *)new_block + remaining_size - FOOTER_SIZE);
     new_block_footer->size = remaining_size;
     new_block_footer->free = 1;
+    new_block->next = NULL;
 
     ptr->size = allocated_size;
     ptr->free = 0;
@@ -140,7 +147,7 @@ void insert_into_free_list(block *b) {
 
 void *merge_block(block *ptr) {
 
-    void *heap_end = sbrk(0);
+    void *heap_end = current_memory_break();
 
     int has_prev = ((void *)ptr != heap_start);
     int has_next = ((void *)((char *)ptr + ptr->size) < heap_end);
@@ -231,6 +238,13 @@ void release_block(void *ptr) {
 
     if (!ptr)
         return;
+
+    if (ptr < heap_start || ptr >= current_memory_break()) {
+        abort();
+    }
+
+    if (((uintptr_t)ptr % ALIGNMENT) != 0)
+        abort();
 
     block *mem = (block *)(((char *)ptr) - HEADER_SIZE);
 
